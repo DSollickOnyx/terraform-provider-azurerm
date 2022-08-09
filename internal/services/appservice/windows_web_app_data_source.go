@@ -34,6 +34,7 @@ type WindowsWebAppDataSourceModel struct {
 	HttpsOnly                     bool                        `tfschema:"https_only"`
 	LogsConfig                    []helpers.LogsConfig        `tfschema:"logs"`
 	SiteConfig                    []helpers.SiteConfigWindows `tfschema:"site_config"`
+	StickySettings                []helpers.StickySettings    `tfschema:"sticky_settings"`
 	StorageAccounts               []helpers.StorageAccount    `tfschema:"storage_account"`
 	ConnectionStrings             []helpers.ConnectionString  `tfschema:"connection_string"`
 	CustomDomainVerificationId    string                      `tfschema:"custom_domain_verification_id"`
@@ -45,6 +46,7 @@ type WindowsWebAppDataSourceModel struct {
 	PossibleOutboundIPAddressList []string                    `tfschema:"possible_outbound_ip_address_list"`
 	SiteCredentials               []helpers.SiteCredential    `tfschema:"site_credential"`
 	Tags                          map[string]string           `tfschema:"tags"`
+	VirtualNetworkSubnetID        string                      `tfschema:"virtual_network_subnet_id"`
 }
 
 var _ sdk.DataSource = WindowsWebAppDataSource{}
@@ -167,6 +169,8 @@ func (d WindowsWebAppDataSource) Attributes() map[string]*pluginsdk.Schema {
 
 		"site_config": helpers.SiteConfigSchemaWindowsComputed(),
 
+		"sticky_settings": helpers.StickySettingsComputedSchema(),
+
 		"storage_account": helpers.StorageAccountSchemaComputed(),
 
 		"tags": tags.SchemaDataSource(),
@@ -232,6 +236,11 @@ func (d WindowsWebAppDataSource) Read() sdk.ResourceFunc {
 				return fmt.Errorf("reading Connection String information for Windows %s: %+v", id, err)
 			}
 
+			stickySettings, err := client.ListSlotConfigurationNames(ctx, id.ResourceGroup, id.SiteName)
+			if err != nil {
+				return fmt.Errorf("reading Sticky Settings for Linux %s: %+v", id, err)
+			}
+
 			siteCredentialsFuture, err := client.ListPublishingCredentials(ctx, id.ResourceGroup, id.SiteName)
 			if err != nil {
 				return fmt.Errorf("listing Site Publishing Credential information for Windows %s: %+v", id, err)
@@ -291,6 +300,8 @@ func (d WindowsWebAppDataSource) Read() sdk.ResourceFunc {
 				currentStack = *currentStackPtr
 			}
 			webApp.SiteConfig = helpers.FlattenSiteConfigWindows(webAppSiteConfig.SiteConfig, currentStack, healthCheckCount)
+
+			webApp.StickySettings = helpers.FlattenStickySettings(stickySettings.SlotConfigNames)
 
 			webApp.StorageAccounts = helpers.FlattenStorageAccounts(storageAccounts)
 

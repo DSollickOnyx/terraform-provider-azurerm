@@ -19,6 +19,8 @@ func dataSourceSqlDatabase() *pluginsdk.Resource {
 	return &pluginsdk.Resource{
 		Read: dataSourceArmSqlDatabaseRead,
 
+		DeprecationMessage: "The `azurerm_sql_database` data source is deprecated and will be removed in version 4.0 of the AzureRM provider. Please use the `azurerm_mssql_database` data source instead.",
+
 		Timeouts: &pluginsdk.ResourceTimeout{
 			Read: pluginsdk.DefaultTimeout(5 * time.Minute),
 		},

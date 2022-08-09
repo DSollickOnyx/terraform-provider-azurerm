@@ -77,7 +77,7 @@ func resourceStaticSite() *pluginsdk.Resource {
 				Computed: true,
 			},
 
-			"identity": commonschema.SystemOrUserAssignedIdentityOptional(),
+			"identity": commonschema.SystemAssignedUserAssignedIdentityOptional(),
 
 			"api_key": {
 				Type:     pluginsdk.TypeString,
@@ -137,8 +137,12 @@ func resourceStaticSiteCreateOrUpdate(d *pluginsdk.ResourceData, meta interface{
 		Tags:       tags.Expand(d.Get("tags").(map[string]interface{})),
 	}
 
-	if _, err := client.CreateOrUpdateStaticSite(ctx, id.ResourceGroup, id.Name, siteEnvelope); err != nil {
+	future, err := client.CreateOrUpdateStaticSite(ctx, id.ResourceGroup, id.Name, siteEnvelope)
+	if err != nil {
 		return fmt.Errorf("failed creating %s: %+v", id, err)
+	}
+	if err := future.WaitForCompletionRef(ctx, client.Client); err != nil {
+		return fmt.Errorf("waiting for creation of %q: %+v", id, err)
 	}
 
 	d.SetId(id.ID())
@@ -235,7 +239,7 @@ func resourceStaticSiteDelete(d *pluginsdk.ResourceData, meta interface{}) error
 }
 
 func expandStaticSiteIdentity(input []interface{}) (*web.ManagedServiceIdentity, error) {
-	config, err := identity.ExpandSystemOrUserAssignedMap(input)
+	config, err := identity.ExpandSystemAndUserAssignedMap(input)
 	if err != nil {
 		return nil, err
 	}
@@ -259,10 +263,10 @@ func expandStaticSiteIdentity(input []interface{}) (*web.ManagedServiceIdentity,
 }
 
 func flattenStaticSiteIdentity(input *web.ManagedServiceIdentity) (*[]interface{}, error) {
-	var transform *identity.SystemOrUserAssignedMap
+	var transform *identity.SystemAndUserAssignedMap
 
 	if input != nil {
-		transform = &identity.SystemOrUserAssignedMap{
+		transform = &identity.SystemAndUserAssignedMap{
 			Type:        identity.Type(string(input.Type)),
 			IdentityIds: make(map[string]identity.UserAssignedIdentityDetails),
 		}
@@ -281,5 +285,5 @@ func flattenStaticSiteIdentity(input *web.ManagedServiceIdentity) (*[]interface{
 		}
 	}
 
-	return identity.FlattenSystemOrUserAssignedMap(transform)
+	return identity.FlattenSystemAndUserAssignedMap(transform)
 }

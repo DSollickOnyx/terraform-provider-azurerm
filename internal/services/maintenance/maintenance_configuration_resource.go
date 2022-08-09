@@ -55,10 +55,7 @@ func resourceArmMaintenanceConfiguration() *pluginsdk.Resource {
 
 			"location": azure.SchemaLocation(),
 
-			// TODO use `azure.SchemaResourceGroupName()` in version 3.0
-			// There's a bug in the Azure API where this is returned in lower-case
-			// BUG: https://github.com/Azure/azure-rest-api-specs/issues/8653
-			"resource_group_name": azure.SchemaResourceGroupNameDiffSuppress(),
+			"resource_group_name": azure.SchemaResourceGroupName(),
 
 			"scope": {
 				Type:     pluginsdk.TypeString,
